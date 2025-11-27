@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeeroStore — Game Store</title>
+<style>
+:root{--bg:#07070a;--card:#111;--accent:#ff5fb4;--text:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#0b0b11);color:var(--text);min-height:100vh}
+header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.logo{width:56px;height:56px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#fff2,#0002);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.logo img{width:100%;height:100%;object-fit:cover}
+h1{font-size:20px;margin:0}
+.controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{background:linear-gradient(90deg,#ff5fb4,#5fd1ff);border:none;padding:8px 12px;border-radius:10px;color:white;cursor:pointer;font-weight:600;transition:0.2s;box-shadow:0 4px 8px rgba(0,0,0,0.3)}
+.btn:hover{opacity:0.9;transform:translateY(-1px)}
+main{padding:16px;max-width:1100px;margin:0 auto}
+.store-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.search{flex:1;min-width:180px}
+input[type="text"], input[type="number"], select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+@media(min-width:720px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{background:var(--card);padding:12px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+.card img{width:120px;height:120px;object-fit:cover;border-radius:8px}
+.name,.price{width:100%;overflow:hidden;white-space:nowrap}
+.price{font-weight:700}
+.checkout-btn{margin-top:6px;padding:6px 10px;background:#5fd1ff;border:none;border-radius:8px;color:#000;font-weight:600;cursor:pointer;transition:0.2s}
+.checkout-btn:hover{opacity:0.9;transform:translateY(-1px)}
+footer{padding:16px;text-align:center;font-size:13px;color:rgba(255,255,255,0.6)}
+.modal{position:fixed;inset:0;display:none;z-index:999}
+.modal.open{display:block}
+.panel{background:#0d0d11;border-radius:12px;padding:20px;width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.05);position:absolute;cursor:grab;top:50px;left:50px}
+.panel h2{margin:0 0 12px 0;color:var(--accent)}
+.items-edit{display:grid;grid-template-columns:1fr;gap:12px;max-height:60vh;overflow:auto;padding-right:6px}
+@media(min-width:900px){.items-edit{grid-template-columns:repeat(2,1fr)}}
+.item-edit{background:#0b0b0d;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);transition:0.2s}
+.item-edit:hover{box-shadow:0 8px 16px rgba(255,95,180,0.3)}
+label{font-size:13px;color:rgba(255,255,255,0.8);display:block;margin-top:6px}
+.checkout-panel{position:fixed;bottom:20px;right:20px;background:#111;padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6);width:320px;display:none;flex-direction:column;gap:10px;z-index:1000}
+.checkout-panel h3{margin:0 0 8px 0;color:var(--accent)}
+.checkout-panel button{align-self:flex-end;cursor:pointer;}
+</style>
+</head>
+<body>
+<header>
+<div class="logo" id="logoWrap"><img id="logoImg" src="https://via.placeholder.com/56" alt="logo"></div>
+<div><h1>NeeroStore</h1><div style="font-size:13px;color:rgba(255,255,255,0.7)">Store game — admin & store settings</div></div>
+<div class="controls">
+<button class="btn" id="adminBtn">Admin</button>
+<button class="btn" id="storeBtn">Pengaturan Store</button>
+<button class="btn" id="checkoutBtn">Checkout</button>
+</div>
+</header>
+<main>
+<div class="store-top">
+<input id="searchInput" type="text" placeholder="Cari item...">
+</div>
+<div class="grid" id="grid"></div>
+</main>
+<footer>NeeroStore • Versi 1.0</footer>
+
+<!-- Admin Panel -->
+<div class="modal" id="modalAdmin">
+<div class="panel" id="panelAdmin">
+<h2>Admin Panel</h2>
+<label>Password Admin:</label><input type="password" id="adminPassInput" placeholder="Masukkan password">
+<button class="btn" id="loginBtn">Login</button>
+<div id="adminControls" style="display:none;margin-top:10px">
+<div class="items-edit" id="itemsEdit"></div>
+<label>Pilih Slot Item:</label><select id="slotSelect"></select>
+<label>Upload Foto Item:</label><input type="file" id="itemImageFile" accept="image/*">
+<button class="btn" id="saveBtn">Simpan</button>
+<button class="btn" id="closeAdminBtn">Tutup Panel</button>
+</div>
+</div>
+</div>
+
+<!-- Store Settings Panel -->
+<div class="modal" id="modalStore">
+<div class="panel" id="panelStore">
+<h2>Pengaturan Store</h2>
+<label>Password Store:</label><input type="password" id="storePassInput" placeholder="Masukkan password">
+<button class="btn" id="storeLoginBtn">Login</button>
+<div id="storeControls" style="display:none;margin-top:10px">
+<label>Ganti Logo Store:</label><input type="file" id="logoFile" accept="image/*">
+<label>Ganti Musik Store:</label><input type="file" id="storeMusicFile" accept="audio/*">
+<img id="logoPreview" src="https://via.placeholder.com/56" alt="Logo Preview" style="width:56px;height:56px;margin-top:8px;border-radius:8px;">
+<button class="btn" id="closeStoreBtn">Tutup Panel</button>
+</div>
+</div>
+</div>
+
+<!-- Checkout Panel -->
+<div class="checkout-panel" id="checkoutPanel">
+<h3>Checkout Items</h3>
+<div id="checkoutList"></div>
+<label>Masukkan metode pembayaran / catatan:</label>
+<textarea id="paymentInfo" placeholder="Transfer ke Dana 081654983537 dan PM TikTok: antifriendlyyy
+Jika sudah tulis iya dan klik Simpan"></textarea>
+<div style="font-weight:700; margin-top:5px;" id="totalPrice">Total: RM 0.00</div>
+<button class="btn" id="saveCheckoutBtn">Simpan Checkout</button>
+<button class="btn" id="closeCheckoutBtn">Tutup</button>
+</div>
+
+<audio id="audio" loop controls></audio>
+<script>
+let items=Array.from({length:12}).map((_,i)=>({id:i+1,name:`Item ${i+1}`,price:`RM ${(i+1)*2}.00`,img:'https://via.placeholder.com/120'}));
+let cart=[];
+const grid=document.getElementById('grid');
+const itemsEdit=document.getElementById('itemsEdit');
+const modalAdmin=document.getElementById('modalAdmin');
+const panelAdmin=document.getElementById('panelAdmin');
+const adminBtn=document.getElementById('adminBtn');
+const closeAdminBtn=document.getElementById('closeAdminBtn');
+const saveBtn=document.getElementById('saveBtn');
+const audio=document.getElementById('audio');
+const itemImageFile=document.getElementById('itemImageFile');
+const slotSelect=document.getElementById('slotSelect');
+const adminPassInput=document.getElementById('adminPassInput');
+const loginBtn=document.getElementById('loginBtn');
+const adminControls=document.getElementById('adminControls');
+const ADMIN_PASSWORD='NEEROSTORE7';
+
+const modalStore=document.getElementById('modalStore');
+const panelStore=document.getElementById('panelStore');
+const storeBtn=document.getElementById('storeBtn');
+const storePassInput=document.getElementById('storePassInput');
+const storeLoginBtn=document.getElementById('storeLoginBtn');
+const storeControls=document.getElementById('storeControls');
+const logoFile=document.getElementById('logoFile');
+const storeMusicFile=document.getElementById('storeMusicFile');
+const closeStoreBtn=document.getElementById('closeStoreBtn');
+const logoImg=document.getElementById('logoImg');
+const logoPreview=document.getElementById('logoPreview');
+const STORE_PASSWORD='NEEROSTORE7';
+
+const checkoutBtn=document.getElementById('checkoutBtn');
+const checkoutPanel=document.getElementById('checkoutPanel');
+const checkoutList=document.getElementById('checkoutList');
+const paymentInfo=document.getElementById('paymentInfo');
+const saveCheckoutBtn=document.getElementById('saveCheckoutBtn');
+const closeCheckoutBtn=document.getElementById('closeCheckoutBtn');
+const totalPriceDisplay=document.getElementById('totalPrice');
+
+function saveToLocal(){localStorage.setItem('neero_items',JSON.stringify(items));localStorage.setItem('neero_cart',JSON.stringify(cart));}
+function loadFromLocal(){try{const storedItems=localStorage.getItem('neero_items');if(storedItems)items=JSON.parse(storedItems);
+const storedCart=localStorage.getItem('neero_cart');if(storedCart)cart=JSON.parse(storedCart);}catch(e){}}
+loadFromLocal();
+
+function renderGrid(){grid.innerHTML='';items.forEach(it=>{
+  const c=document.createElement('div');c.className='card';
+  const img=document.createElement('img');img.src=it.img;
+  const name=document.createElement('div');name.className='name';name.textContent=it.name;
+  const price=document.createElement('div');price.className='price';price.textContent=it.price;
+  const btn=document.createElement('button');btn.className='checkout-btn';btn.textContent='Checkout';
+  btn.addEventListener('click',()=>{cart.push(it);alert(it.name+' ditambahkan ke checkout!');saveToLocal();updateTotal();});
+  c.append(img,name,price,btn);grid.appendChild(c);
+});}
+
+function updateTotal(){
+  let total=cart.reduce((sum,it)=>{
+    let p=Number(it.price.replace(/[^0-9.-]+/g, ''));
+    return sum+p;
+  },0);
+  totalPriceDisplay.textContent='Total: RM '+total.toFixed(2);
+}
+
+function buildAdmin(){itemsEdit.innerHTML='';slotSelect.innerHTML='';items.forEach((it,i)=>{
+const div=document.createElement('div');div.className='item-edit';div.innerHTML=`<label>Nama</label><input data-idx='${i}' data-field='name' value='${it.name}'><label>Harga</label><input data-idx='${i}' data-field='price' value='${it.price}'>`;
+itemsEdit.appendChild(div);
+const opt=document.createElement('option');opt.value=i;opt.textContent=`Slot ${i+1}`;slotSelect.appendChild(opt);
+});
+itemsEdit.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',e=>{const idx=Number(e.target.dataset.idx);const field=e.target.dataset.field;items[idx][field]=e.target.value;saveToLocal();renderGrid();}));
+}
+
+adminBtn.addEventListener('click',()=>{modalAdmin.classList.add('open');});
+closeAdminBtn.addEventListener('click',()=>{modalAdmin.classList.remove('open');});
+loginBtn.addEventListener('click',()=>{if(adminPassInput.value===ADMIN_PASSWORD){adminControls.style.display='block';buildAdmin();alert('Admin login berhasil!');}else alert('Password salah');});
+saveBtn.addEventListener('change',()=>{saveToLocal();alert('Tersimpan di localStorage');});
+itemImageFile.addEventListener('change',e=>{const file=e.target.files[0];if(file){const url=URL.createObjectURL(file);const selectedIdx=Number(slotSelect.value);items[selectedIdx].img=url;saveToLocal();renderGrid();}});
+
+storeBtn.addEventListener('click',()=>{modalStore.classList.add('open');});
+closeStoreBtn.addEventListener('click',()=>{modalStore.classList.remove('open');});
+storeLoginBtn.addEventListener('click',()=>{if(storePassInput.value===STORE_PASSWORD){storeControls.style.display='block';alert('Login Store berhasil!');}else alert('Password salah');});
+logoFile.addEventListener('change',e=>{const file=e.target.files[0];if(file){logoImg.src=URL.createObjectURL(file);logoPreview.src=URL.createObjectURL(file);}});
+storeMusicFile.addEventListener('change',e=>{const file=e.target.files[0];if(file){audio.src=URL.createObjectURL(file);}});
+
+checkoutBtn.addEventListener('click',()=>{checkoutPanel.style.display='flex';renderCheckout();updateTotal();});
+closeCheckoutBtn.addEventListener('click',()=>{checkoutPanel.style.display='none';});
+saveCheckoutBtn.addEventListener('click',()=>{
+  const payment=paymentInfo.value.trim();
+  if(cart.length===0){alert('Tidak ada item di checkout!'); return;}
+  if(payment===''){alert('Masukkan informasi pembayaran'); return;}
+  localStorage.setItem('neero_checkout_saved',JSON.stringify({cart,payment}));
+  alert('Checkout berhasil disimpan! Total: Rp '+cart.reduce((sum,it)=>sum+Number(it.price.replace(/[^0-9.-]+/g,'')),0).toFixed(2));
+  cart=[];
+  paymentInfo.value='';
+  renderGrid();
+  renderCheckout();
+  updateTotal();
+  checkoutPanel.style.display='none';
+});
+
+function renderCheckout(){checkoutList.innerHTML='';
+if(cart.length===0){checkoutList.textContent='Keranjang kosong'; return;}
+cart.forEach(it=>{
+  const div=document.createElement('div'); div.textContent=`${it.name} - ${it.price}`;
+  checkoutList.appendChild(div);
+});}
+
+function makeDraggable(panel){let isDown=false, offsetX=0, offsetY=0;
+panel.addEventListener('mousedown',e=>{isDown=true;offsetX=panel.offsetLeft-e.clientX;offsetY=panel.offsetTop-e.clientY;panel.style.cursor='grabbing';});
+document.addEventListener('mouseup',()=>{isDown=false;panel.style.cursor='grab';});
+document.addEventListener('mousemove',e=>{if(isDown){panel.style.left=(e.clientX+offsetX)+'px';panel.style.top=(e.clientY+offsetY)+'px';}});
+}
+makeDraggable(panelAdmin);
+makeDraggable(panelStore);
+
+renderGrid();
+</script>
+</body>
+</html>
